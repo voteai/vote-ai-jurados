@@ -36,7 +36,8 @@ export default function JudgePanel() {
       const judgeRecords = await base44.entities.Judge.filter({ email: userEmail });
       const ownJudges = judgeRecords.filter((judge) =>
         String(judge.email || "").trim().toLowerCase() === userEmail &&
-        judge.invitation_status === "accepted"
+        judge.invitation_status !== "declined" &&
+        judge.active !== false
       );
       setJudges(ownJudges);
 
@@ -102,7 +103,7 @@ export default function JudgePanel() {
             <CardContent className="py-12 text-center text-muted-foreground">
               <Star className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>Voce ainda nao tem aprovacao ativa como jurado.</p>
-              <p className="text-sm mt-2">Aguarde o organizador aprovar seu cadastro e atribuir uma categoria.</p>
+              <p className="text-sm mt-2">Aguarde o organizador cadastrar seu e-mail e atribuir uma categoria.</p>
             </CardContent>
           </Card>
         ) : activeContestCards.length === 0 ? (

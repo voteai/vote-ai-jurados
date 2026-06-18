@@ -107,9 +107,9 @@ export default function EvaluationPage() {
         return;
       }
 
-      if (foundJudge.invitation_status !== "accepted") {
+      if (foundJudge.invitation_status === "declined" || foundJudge.active === false) {
         setJudge(null);
-        setAccessError("Seu cadastro de jurado ainda nao foi aprovado pelo organizador.");
+        setAccessError("Seu cadastro de jurado nao esta ativo para este concurso.");
         return;
       }
 

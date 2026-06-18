@@ -14,7 +14,7 @@ import EmptyStateActionable from "@/components/contest/EmptyStateActionable";
 import PhotoUploadField from "@/components/contest/PhotoUploadField";
 import { logAudit } from "@/lib/audit-log";
 
-const emptyForm = { name: "", email: "", phone: "", specialty: "", bio: "", photo_url: "" };
+const emptyForm = { name: "", email: "", phone: "", specialty: "", bio: "", photo_url: "", invitation_status: "accepted" };
 
 export default function JudgesList({ contest, isAdmin, onChanged }) {
   const [judges, setJudges] = useState([]);
@@ -67,7 +67,12 @@ export default function JudgesList({ contest, isAdmin, onChanged }) {
       return;
     }
 
-    const createdJudge = await base44.entities.Judge.create({ ...form, contest_id: contest.id, invitation_status: "pending" });
+    const createdJudge = await base44.entities.Judge.create({
+      ...form,
+      contest_id: contest.id,
+      active: true,
+      ...(form.invitation_status === "accepted" ? { approved_at: new Date().toISOString() } : {}),
+    });
     await logAudit({
       action: "judge.create",
       entityType: "Judge",
@@ -92,7 +97,7 @@ export default function JudgesList({ contest, isAdmin, onChanged }) {
       console.warn("Email de jurado nao enviado:", error);
     }
 
-    toast.success("Jurado adicionado! Convite enviado por email.");
+    toast.success(form.invitation_status === "accepted" ? "Jurado cadastrado e liberado!" : "Jurado adicionado! Convite enviado por email.");
     setOpen(false);
     setForm(emptyForm);
     await load();
@@ -247,8 +252,15 @@ export default function JudgesList({ contest, isAdmin, onChanged }) {
         <div><Label>Email *</Label><Input type="email" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} /></div>
         <div><Label>Especialidade</Label><Input value={form.specialty} onChange={(event) => setForm((prev) => ({ ...prev, specialty: event.target.value }))} /></div>
         <div><Label>Telefone</Label><Input value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} /></div>
+        <label className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+          <Checkbox
+            checked={form.invitation_status === "accepted"}
+            onCheckedChange={(checked) => setForm((prev) => ({ ...prev, invitation_status: checked ? "accepted" : "pending" }))}
+          />
+          <span>Liberar para votar sem confirmacao por e-mail</span>
+        </label>
         <Button className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:from-cyan-600 hover:to-violet-700" onClick={handleSave} disabled={photoUploading}>
-          <Mail className="w-4 h-4" /> {photoUploading ? "Enviando foto..." : "Convidar"}
+          <Mail className="w-4 h-4" /> {photoUploading ? "Enviando foto..." : form.invitation_status === "accepted" ? "Cadastrar e liberar" : "Convidar"}
         </Button>
       </div>
     </DialogContent>
