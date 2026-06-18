@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, Trophy, AlertCircle, User, CheckCircle, ChevronDown } from "lucide-react";
+import { Heart, Trophy, AlertCircle, User, CheckCircle, ChevronDown, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import ScoreControl from "@/components/evaluation/ScoreControl";
 import { calcLiveScore, normalizeScore } from "@/utils/scoring";
@@ -38,6 +38,13 @@ export default function PublicVoting({ jurorOnly = false }) {
   const [voterKey, setVoterKey] = useState("");
   const [accessError, setAccessError] = useState("");
   const [jurorName, setJurorName] = useState("");
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("vote_link_dark_mode") === "true");
+  const dk = darkMode;
+
+  const toggleDark = () => setDarkMode((prev) => {
+    localStorage.setItem("vote_link_dark_mode", String(!prev));
+    return !prev;
+  });
 
   useEffect(() => { loadData(); }, [contestId]);
 
@@ -215,11 +222,11 @@ export default function PublicVoting({ jurorOnly = false }) {
     </div>
   );
 
-  if (!jurorOnly && !contest.allow_public_vote) return (
+  if (!contest.allow_public_vote) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-gray-500 px-4 text-center">
       <Trophy className="w-12 h-12 opacity-30" />
-      <p className="text-lg font-medium">Votacao popular nao disponivel</p>
-      <p className="text-sm">O organizador nao habilitou a votacao publica para este concurso.</p>
+      <p className="text-lg font-medium">Votacao ainda nao liberada</p>
+      <p className="text-sm">Aguarde o organizador liberar a votacao para este concurso.</p>
     </div>
   );
 
@@ -231,26 +238,35 @@ export default function PublicVoting({ jurorOnly = false }) {
         <p className="text-lg font-medium">{isDraft ? "Votacao ainda nao aberta" : "Votacao encerrada"}</p>
         <p className="text-sm">
           {isDraft
-            ? "O organizador ainda precisa abrir a votacao popular deste concurso."
-            : "A votacao publica para este concurso nao esta disponivel no momento."}
+            ? "O organizador ainda precisa ativar o concurso e liberar a votacao."
+            : "A votacao para este concurso nao esta disponivel no momento."}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-5 text-center">
+    <div className={`min-h-screen transition-colors ${dk ? "bg-gray-950 text-gray-100" : "bg-gradient-to-br from-pink-50 via-white to-purple-50 text-gray-900"}`}>
+      <div className={`${dk ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"} border-b shadow-sm`}>
+        <div className="max-w-2xl mx-auto px-4 py-5 text-center relative">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleDark}
+            className={`absolute right-4 top-4 ${dk ? "border-gray-700 bg-gray-900 text-yellow-300 hover:bg-gray-800" : ""}`}
+            title={dk ? "Modo claro" : "Modo noturno"}
+          >
+            {dk ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
           <div className="flex items-center justify-center gap-2 mb-1">
             <Heart className="w-5 h-5 text-pink-500" />
             <span className="text-sm font-medium text-pink-600 uppercase tracking-wide">
               {jurorOnly ? "Votacao dos Jurados" : "Votacao Popular"}
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">{contest.name}</h1>
-          {jurorOnly && jurorName && <p className="text-sm text-gray-500 mt-1">Jurado: {jurorName}</p>}
-          {contest.location && <p className="text-sm text-gray-500 mt-1">{contest.location}</p>}
+          <h1 className={`text-2xl font-bold ${dk ? "text-white" : "text-gray-900"}`}>{contest.name}</h1>
+          {jurorOnly && jurorName && <p className={`text-sm mt-1 ${dk ? "text-gray-400" : "text-gray-500"}`}>Jurado: {jurorName}</p>}
+          {contest.location && <p className={`text-sm mt-1 ${dk ? "text-gray-400" : "text-gray-500"}`}>{contest.location}</p>}
           {!jurorOnly && contest.public_vote_weight > 0 && (
             <Badge className="mt-2 bg-pink-100 text-pink-700 border-pink-200">
               Vale {contest.public_vote_weight}% da nota final
@@ -265,7 +281,7 @@ export default function PublicVoting({ jurorOnly = false }) {
             {categories.map((category) => (
               <Button key={category.id} size="sm"
                 variant={selectedCategory === category.id ? "default" : "outline"}
-                className={selectedCategory === category.id ? "bg-pink-600 hover:bg-pink-700 border-pink-600" : ""}
+                className={selectedCategory === category.id ? "bg-pink-600 hover:bg-pink-700 border-pink-600" : dk ? "border-gray-700 bg-gray-900 text-gray-200 hover:bg-gray-800" : ""}
                 onClick={() => { setSelectedCategory(category.id); setActiveParticipantId(null); }}>
                 {category.name}
               </Button>
@@ -273,7 +289,7 @@ export default function PublicVoting({ jurorOnly = false }) {
           </div>
         )}
 
-        <div className={`rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2 ${alreadyVotedInCategory ? "bg-green-50 border border-green-200 text-green-700" : "bg-pink-50 border border-pink-200 text-pink-700"}`}>
+        <div className={`rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2 ${alreadyVotedInCategory ? dk ? "bg-green-500/10 border border-green-500/30 text-green-300" : "bg-green-50 border border-green-200 text-green-700" : dk ? "bg-pink-500/10 border border-pink-500/30 text-pink-200" : "bg-pink-50 border border-pink-200 text-pink-700"}`}>
           {alreadyVotedInCategory
             ? <><CheckCircle className="w-4 h-4 fill-green-500 text-green-500" /> Voce ja avaliou {myCategoryVote?.participant_name || "um participante"} nesta categoria.</>
             : <><Heart className="w-4 h-4" /> Escolha um participante e avalie usando os criterios oficiais.</>
@@ -281,15 +297,15 @@ export default function PublicVoting({ jurorOnly = false }) {
         </div>
 
         {categoryCriteria.length === 0 && (
-          <Card className="mb-5 border-amber-200 bg-amber-50">
-            <CardContent className="py-4 text-sm text-amber-800">
+          <Card className={`mb-5 ${dk ? "border-amber-500/30 bg-amber-500/10" : "border-amber-200 bg-amber-50"}`}>
+            <CardContent className={`py-4 text-sm ${dk ? "text-amber-200" : "text-amber-800"}`}>
               Esta categoria ainda nao possui criterios de avaliacao. O publico podera votar quando os criterios forem configurados.
             </CardContent>
           </Card>
         )}
 
         {filteredParticipants.length === 0 ? (
-          <Card><CardContent className="py-12 text-center text-gray-400">Nenhum participante nesta categoria.</CardContent></Card>
+          <Card className={dk ? "bg-gray-900 border-gray-800" : ""}><CardContent className={`py-12 text-center ${dk ? "text-gray-500" : "text-gray-400"}`}>Nenhum participante nesta categoria.</CardContent></Card>
         ) : (
           <div className="space-y-3">
             {filteredParticipants.map((participant) => {
@@ -298,7 +314,7 @@ export default function PublicVoting({ jurorOnly = false }) {
               const showSubmittedResult = isChosen && myCategoryVote?.final_score !== undefined && myCategoryVote?.final_score !== null;
               const count = voteCountFor(participant.id);
               return (
-                <Card key={participant.id} className={`transition-all duration-200 ${isChosen ? "border-green-400 shadow-md shadow-green-100" : isOpen ? "border-pink-300 shadow-md shadow-pink-100" : "hover:shadow-md"}`}>
+                <Card key={participant.id} className={`transition-all duration-200 ${dk ? "bg-gray-900 border-gray-800 text-gray-100" : ""} ${isChosen ? "border-green-400 shadow-md shadow-green-100" : isOpen ? "border-pink-300 shadow-md shadow-pink-100" : "hover:shadow-md"}`}>
                   <CardContent className="pt-5 pb-4">
                     <div className="flex items-center gap-4">
                       {participant.photo_url ? (
@@ -310,10 +326,10 @@ export default function PublicVoting({ jurorOnly = false }) {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{participant.name}</p>
-                        {participant.code && <p className="text-xs text-gray-400">#{participant.code}</p>}
+                          <p className={`font-semibold truncate ${dk ? "text-white" : "text-gray-900"}`}>{participant.name}</p>
+                        {participant.code && <p className={`text-xs ${dk ? "text-gray-500" : "text-gray-400"}`}>#{participant.code}</p>}
                         {participant.description && (
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{participant.description}</p>
+                          <p className={`text-xs mt-1 line-clamp-2 ${dk ? "text-gray-400" : "text-gray-500"}`}>{participant.description}</p>
                         )}
                         {isChosen && myCategoryVote?.final_score !== undefined && myCategoryVote?.final_score !== null && (
                           <p className="mt-1 text-sm font-semibold text-green-600">
@@ -335,11 +351,11 @@ export default function PublicVoting({ jurorOnly = false }) {
                     {(isOpen || isChosen) && (
                       <div className="mt-5 space-y-4 border-t pt-4">
                         {!alreadyVotedInCategory && categoryCriteria.map((criterion) => (
-                          <div key={criterion.id} className="rounded-lg border border-gray-200 bg-white p-4">
+                          <div key={criterion.id} className={`rounded-lg border p-4 ${dk ? "border-gray-700 bg-gray-950" : "border-gray-200 bg-white"}`}>
                             <div className="mb-3 flex items-start justify-between gap-3">
                               <div>
-                                <p className="font-medium text-gray-900">{criterion.name}</p>
-                                {criterion.description && <p className="text-xs text-gray-500">{criterion.description}</p>}
+                                <p className={`font-medium ${dk ? "text-gray-100" : "text-gray-900"}`}>{criterion.name}</p>
+                                {criterion.description && <p className={`text-xs ${dk ? "text-gray-400" : "text-gray-500"}`}>{criterion.description}</p>}
                               </div>
                               <Badge variant="outline">{criterion.weight}%</Badge>
                             </div>
@@ -366,7 +382,7 @@ export default function PublicVoting({ jurorOnly = false }) {
                           </div>
                         ) : (
                           <>
-                            <div className="rounded-lg border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700">
+                            <div className={`rounded-lg border px-4 py-3 text-sm ${dk ? "border-pink-500/30 bg-pink-500/10 text-pink-200" : "border-pink-200 bg-pink-50 text-pink-700"}`}>
                               A nota final sera exibida depois que voce enviar a avaliacao.
                             </div>
 
