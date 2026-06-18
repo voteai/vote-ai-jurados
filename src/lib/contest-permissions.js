@@ -1,11 +1,12 @@
 export const canManageContest = (user, contest) => {
   if (!user) return false;
-  if (user.role === "admin") return true;
+  if (["admin", "organizer", "owner"].includes(user.role)) return true;
   if (!contest) return false;
 
   const userId = String(user.id ?? "");
   const userEmail = String(user.email ?? "").toLowerCase();
   const userName = String(user.full_name ?? "").trim().toLowerCase();
+  const normalize = (value) => String(value ?? "").trim().toLowerCase();
 
   const ownershipValues = [
     contest.organizer_id,
@@ -17,17 +18,25 @@ export const canManageContest = (user, contest) => {
     contest.user_id,
     contest.organizer_email,
     contest.organizer_name,
+    contest.created_by_user,
+    contest.owner,
+    contest.organizer,
   ].filter(Boolean);
 
   // Concursos antigos foram criados antes de owner_id/organizer_email existirem.
   // Mantemos acesso administrativo para esses registros legados e os novos ja saem com dono.
   if (ownershipValues.length === 0) return true;
 
-  if (ownershipValues.some((value) => String(value) === userId) ||
-    (contest.organizer_email && String(contest.organizer_email).toLowerCase() === userEmail) ||
-    (contest.created_by_email && String(contest.created_by_email).toLowerCase() === userEmail) ||
-    (contest.created_by_name && String(contest.created_by_name).trim().toLowerCase() === userName) ||
-    (contest.organizer_name && String(contest.organizer_name).trim().toLowerCase() === userName)) {
+  if (ownershipValues.some((value) => {
+    const normalized = normalize(typeof value === "object" ? JSON.stringify(value) : value);
+    return (
+      normalized === normalize(userId) ||
+      normalized === userEmail ||
+      normalized === userName ||
+      (userEmail && normalized.includes(userEmail)) ||
+      (userName && normalized.includes(userName))
+    );
+  })) {
     return true;
   }
 
