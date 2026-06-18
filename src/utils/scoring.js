@@ -114,14 +114,21 @@ export function getPublicVoteAvgScore(participantId, publicVotes) {
   return { avg: roundScore(avg), count: submittedVotes.length };
 }
 
-export function blendFinalScore(judgeAvg, publicAvg, publicWeight = 0) {
+export function blendFinalScore(judgeAvg, publicAvg, publicWeight = 0, judgeCount = 0, publicCount = 0) {
   const judgeScore = Number.isFinite(Number(judgeAvg)) ? Number(judgeAvg) : null;
   const popularScore = Number.isFinite(Number(publicAvg)) ? Number(publicAvg) : null;
   const weight = Math.max(0, Math.min(100, Number(publicWeight) || 0));
+  const judges = Math.max(0, Number(judgeCount) || 0);
+  const popularAsJudge = publicCount > 0 ? 1 : 0;
 
   if (judgeScore === null && popularScore === null) return null;
-  if (weight === 0 || popularScore === null) return roundScore(judgeScore);
+  if (popularScore === null) return roundScore(judgeScore);
   if (judgeScore === null) return roundScore(popularScore);
+  if (weight === 0) {
+    const divisor = judges + popularAsJudge;
+    if (divisor === 0) return roundScore(judgeScore);
+    return roundScore(((judgeScore * judges) + (popularScore * popularAsJudge)) / divisor);
+  }
 
   return roundScore((judgeScore * (100 - weight) + popularScore * weight) / 100);
 }

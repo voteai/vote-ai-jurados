@@ -37,7 +37,7 @@ export async function exportResultsCSV(base44, contest, categoryId, categoryName
         judge_score: judgeScore,
         public_score: popular.avg,
         public_vote_count: popular.count,
-        avg_score: blendFinalScore(judgeScore, popular.avg, contest.public_vote_weight),
+        avg_score: blendFinalScore(judgeScore, popular.avg, contest.public_vote_weight, participantEvaluations.length, popular.count),
       };
     });
 

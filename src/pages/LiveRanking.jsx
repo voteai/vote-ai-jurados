@@ -63,7 +63,7 @@ export default function LiveRanking() {
         const popular = getPublicVoteAvgScore(p.id, publicVotes || []);
         return {
           ...p,
-          avg_score: blendFinalScore(judgeAvg, popular.avg, contest?.public_vote_weight),
+          avg_score: blendFinalScore(judgeAvg, popular.avg, contest?.public_vote_weight, counts[p.id] || 0, popular.count),
           judge_score: judgeAvg,
           public_score: popular.avg,
           total_judges: counts[p.id] || 0,

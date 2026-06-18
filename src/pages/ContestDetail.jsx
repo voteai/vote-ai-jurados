@@ -109,9 +109,9 @@ export default function ContestDetail() {
     published: "Publicado",
   };
 
-  const publicVoteUrl = `${window.location.origin}/vote/${id}`;
+  const publicVoteUrl = `${window.location.origin}/judge-vote/${id}`;
   const publicVoteQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=14&data=${encodeURIComponent(publicVoteUrl)}`;
-  const publicVoteIsOpen = contest?.allow_public_vote && ["active", "evaluating"].includes(contest?.status);
+  const publicVoteIsOpen = ["active", "evaluating"].includes(contest?.status);
 
   const copyVoteLink = () => {
     const url = publicVoteUrl;
@@ -187,9 +187,9 @@ export default function ContestDetail() {
                 <Radio className="w-4 h-4 animate-pulse" /> Tela Ao Vivo
               </Button>
             </a>
-            {contest.allow_public_vote && (
+            {isAdmin && (
               <Button variant="outline" size="sm" className="gap-2 text-pink-600 border-pink-300 hover:bg-pink-50 dark:hover:bg-pink-500/10" onClick={() => setPublicVoteDialogOpen(true)}>
-                <QrCode className="w-4 h-4" /> Voto Popular
+                <QrCode className="w-4 h-4" /> Votacao Jurados
               </Button>
             )}
             {isAdmin && (
@@ -227,7 +227,7 @@ export default function ContestDetail() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 text-pink-500" /> Voto Popular
+              <QrCode className="h-5 w-5 text-pink-500" /> Link de Votacao dos Jurados
             </DialogTitle>
           </DialogHeader>
 
@@ -237,21 +237,21 @@ export default function ContestDetail() {
                 <div className="mb-1 flex items-center gap-2 font-semibold">
                   <AlertTriangle className="h-4 w-4" /> Votacao ainda nao esta aberta
                 </div>
-                <p>O link e o QR Code estao corretos, mas o concurso precisa estar Ativo ou Avaliando para o publico votar.</p>
+                <p>O link e o QR Code estao corretos, mas o concurso precisa estar Ativo ou Avaliando para os jurados votarem.</p>
                 {isAdmin && (
                   <Button
                     className="mt-3 w-full bg-amber-500 text-slate-950 hover:bg-amber-400"
                     onClick={openPublicVoteNow}
                     disabled={openingPublicVote}
                   >
-                    {openingPublicVote ? "Abrindo..." : "Abrir votacao popular agora"}
+                    {openingPublicVote ? "Abrindo..." : "Abrir votacao agora"}
                   </Button>
                 )}
               </div>
             )}
 
             <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Link de votacao</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Link restrito aos jurados</p>
               <div className="flex gap-2">
                 <Input value={publicVoteUrl} readOnly className="text-xs" />
                 <Button variant="outline" size="icon" onClick={copyVoteLink} title="Copiar link">
@@ -261,9 +261,9 @@ export default function ContestDetail() {
             </div>
 
             <div className="flex flex-col items-center rounded-lg border border-border bg-card p-4">
-              <img src={publicVoteQrUrl} alt={`QR Code da votacao popular de ${contest.name || "Concurso"}`} className="h-64 w-64 rounded-md bg-white p-2" />
+              <img src={publicVoteQrUrl} alt={`QR Code da votacao dos jurados de ${contest.name || "Concurso"}`} className="h-64 w-64 rounded-md bg-white p-2" />
               <p className="mt-3 text-center text-sm text-muted-foreground">
-                Aponte a camera do celular para abrir a votacao popular.
+                Aponte a camera do celular para abrir a votacao restrita aos jurados cadastrados.
               </p>
             </div>
 

@@ -21,7 +21,7 @@ function getFingerprint() {
   return fp;
 }
 
-export default function PublicVoting() {
+export default function PublicVoting({ jurorOnly = false }) {
   const { contestId } = useParams();
   const [contest, setContest] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -35,30 +35,68 @@ export default function PublicVoting() {
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
   const [justSubmittedVoteId, setJustSubmittedVoteId] = useState(null);
-
-  const fingerprint = getFingerprint();
+  const [voterKey, setVoterKey] = useState("");
+  const [accessError, setAccessError] = useState("");
+  const [jurorName, setJurorName] = useState("");
 
   useEffect(() => { loadData(); }, [contestId]);
 
   const loadData = async () => {
     setLoading(true);
-    const [contestRes, catsRes, partsRes, criteriaRes, allVotes] = await Promise.all([
-      base44.entities.Contest.filter({ id: contestId }),
-      base44.entities.Category.filter({ contest_id: contestId }),
-      base44.entities.Participant.filter({ contest_id: contestId }),
-      base44.entities.EvaluationCriterion.filter({ contest_id: contestId }),
-      base44.entities.PublicVote.filter({ contest_id: contestId }),
-    ]);
-    const foundContest = contestRes[0];
-    const validCategories = catsRes || [];
-    setContest(foundContest);
-    setCategories(validCategories);
-    setParticipants((partsRes || []).filter((participant) => participant.status !== "disqualified"));
-    setCriteria((criteriaRes || []).filter((criterion) => criterion.active !== false));
-    setVotes(allVotes || []);
-    setMyVotes((allVotes || []).filter((vote) => vote.voter_fingerprint === fingerprint));
-    if (validCategories.length > 0) setSelectedCategory(validCategories[0].id);
-    setLoading(false);
+    setAccessError("");
+
+    try {
+      let currentVoterKey = getFingerprint();
+
+      if (jurorOnly) {
+        const authUser = await base44.auth.me();
+        const email = String(authUser?.email || "").trim().toLowerCase();
+        if (!email) {
+          setAccessError("Entre com a conta cadastrada pelo organizador para acessar esta votacao.");
+          return;
+        }
+
+        const judgeRecords = await base44.entities.Judge.filter({ email });
+        const allowedJudge = (judgeRecords || []).find((judge) =>
+          String(judge.email || "").trim().toLowerCase() === email &&
+          String(judge.contest_id || "") === String(contestId) &&
+          judge.invitation_status !== "declined" &&
+          judge.active !== false
+        );
+
+        if (!allowedJudge) {
+          setAccessError("Este link e restrito aos jurados cadastrados pelo organizador.");
+          return;
+        }
+
+        currentVoterKey = `juror_vote:${allowedJudge.id}`;
+        setJurorName(allowedJudge.name || authUser.full_name || authUser.email);
+      }
+
+      setVoterKey(currentVoterKey);
+
+      const [contestRes, catsRes, partsRes, criteriaRes, allVotes] = await Promise.all([
+        base44.entities.Contest.filter({ id: contestId }),
+        base44.entities.Category.filter({ contest_id: contestId }),
+        base44.entities.Participant.filter({ contest_id: contestId }),
+        base44.entities.EvaluationCriterion.filter({ contest_id: contestId }),
+        base44.entities.PublicVote.filter({ contest_id: contestId }),
+      ]);
+      const foundContest = contestRes[0];
+      const validCategories = catsRes || [];
+      setContest(foundContest);
+      setCategories(validCategories);
+      setParticipants((partsRes || []).filter((participant) => participant.status !== "disqualified"));
+      setCriteria((criteriaRes || []).filter((criterion) => criterion.active !== false));
+      setVotes(allVotes || []);
+      setMyVotes((allVotes || []).filter((vote) => vote.voter_fingerprint === currentVoterKey));
+      if (validCategories.length > 0) setSelectedCategory(validCategories[0].id);
+    } catch (error) {
+      console.error("Erro ao carregar votacao:", error);
+      setAccessError("Nao foi possivel carregar esta votacao agora.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const categoryCriteria = useMemo(() => {
@@ -137,7 +175,8 @@ export default function PublicVoting() {
         category_id: participant.category_id,
         participant_id: participant.id,
         participant_name: participant.name,
-        voter_fingerprint: fingerprint,
+        voter_fingerprint: voterKey || getFingerprint(),
+        voter_user_id: jurorOnly ? jurorName : "",
         final_score: participantFinalScore(participant.id),
         scores_json: JSON.stringify(criteriaScores),
         status: "submitted",
@@ -181,6 +220,14 @@ export default function PublicVoting() {
     </div>
   );
 
+  if (accessError) return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-gray-500 px-4 text-center">
+      <AlertCircle className="w-10 h-10 text-red-400" />
+      <p className="text-lg font-medium">Acesso restrito</p>
+      <p className="text-sm">{accessError}</p>
+    </div>
+  );
+
   if (!contest) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-gray-500">
       <AlertCircle className="w-10 h-10" />
@@ -188,7 +235,7 @@ export default function PublicVoting() {
     </div>
   );
 
-  if (!contest.allow_public_vote) return (
+  if (!jurorOnly && !contest.allow_public_vote) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-gray-500 px-4 text-center">
       <Trophy className="w-12 h-12 opacity-30" />
       <p className="text-lg font-medium">Votacao popular nao disponivel</p>
@@ -217,11 +264,14 @@ export default function PublicVoting() {
         <div className="max-w-2xl mx-auto px-4 py-5 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Heart className="w-5 h-5 text-pink-500" />
-            <span className="text-sm font-medium text-pink-600 uppercase tracking-wide">Votacao Popular</span>
+            <span className="text-sm font-medium text-pink-600 uppercase tracking-wide">
+              {jurorOnly ? "Votacao dos Jurados" : "Votacao Popular"}
+            </span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{contest.name}</h1>
+          {jurorOnly && jurorName && <p className="text-sm text-gray-500 mt-1">Jurado: {jurorName}</p>}
           {contest.location && <p className="text-sm text-gray-500 mt-1">{contest.location}</p>}
-          {contest.public_vote_weight > 0 && (
+          {!jurorOnly && contest.public_vote_weight > 0 && (
             <Badge className="mt-2 bg-pink-100 text-pink-700 border-pink-200">
               Vale {contest.public_vote_weight}% da nota final
             </Badge>
@@ -326,8 +376,8 @@ export default function PublicVoting() {
                           <div className={`festival-score-reveal rounded-xl border border-pink-200 bg-gradient-to-r from-pink-50 via-violet-50 to-cyan-50 px-4 py-4 shadow-lg ${justSubmittedVoteId === myCategoryVote.id ? "ring-2 ring-pink-300" : ""}`}>
                             <div className="flex items-center justify-between gap-3">
                               <div>
-                                <span className="text-xs font-semibold uppercase tracking-wide text-pink-700">Nota Final</span>
-                                <p className="text-sm text-gray-600">Avaliacao popular enviada com sucesso.</p>
+                              <span className="text-xs font-semibold uppercase tracking-wide text-pink-700">Nota Final</span>
+                              <p className="text-sm text-gray-600">Avaliacao enviada com sucesso.</p>
                               </div>
                               <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-violet-500 to-cyan-500">
                                 {Number(myCategoryVote.final_score).toFixed(1)}
@@ -345,7 +395,7 @@ export default function PublicVoting() {
                               disabled={voting}
                               onClick={() => handleVote(participant)}
                             >
-                              {voting ? "Enviando..." : "Enviar avaliacao popular"}
+                              {voting ? "Enviando..." : jurorOnly ? "Enviar avaliacao" : "Enviar avaliacao popular"}
                             </Button>
                           </>
                         )}
@@ -359,7 +409,7 @@ export default function PublicVoting() {
         )}
 
         <p className="text-center text-xs text-gray-400 mt-8">
-          1 avaliacao por dispositivo por categoria - votacao anonima e segura
+          {jurorOnly ? "1 avaliacao por jurado em cada categoria." : "1 avaliacao por dispositivo por categoria - votacao anonima e segura"}
         </p>
       </div>
     </div>

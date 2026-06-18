@@ -72,7 +72,7 @@ export default function RankingView({ contest, isAdmin }) {
         .map((participant) => {
           const judge = getParticipantAvgScore(participant.id, validEvaluations, activeCriteria, allScores);
           const popular = getPublicVoteAvgScore(participant.id, asArray(publicVotes));
-          const finalScore = blendFinalScore(judge.avg, popular.avg, contest.public_vote_weight);
+          const finalScore = blendFinalScore(judge.avg, popular.avg, contest.public_vote_weight, judge.count, popular.count);
           return {
             ...participant,
             avg_score: finalScore,
