@@ -1,0 +1,54 @@
+{
+  "name": "Judge",
+  "type": "object",
+  "properties": {
+    "contest_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "specialty": {
+      "type": "string"
+    },
+    "invitation_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ],
+      "default": "pending"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "approved_at": {
+      "type": "string"
+    },
+    "declined_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "contest_id",
+    "name",
+    "email"
+  ]
+}

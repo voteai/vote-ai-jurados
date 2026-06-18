@@ -1,0 +1,56 @@
+{
+  "name": "Evaluation",
+  "type": "object",
+  "properties": {
+    "contest_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "participant_id": {
+      "type": "string"
+    },
+    "judge_id": {
+      "type": "string"
+    },
+    "judge_name": {
+      "type": "string"
+    },
+    "participant_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "unlocked",
+        "canceled"
+      ],
+      "default": "draft"
+    },
+    "final_score": {
+      "type": "number"
+    },
+    "general_comment": {
+      "type": "string"
+    },
+    "submitted_at": {
+      "type": "string"
+    },
+    "unlocked_by_admin": {
+      "type": "boolean",
+      "default": false
+    },
+    "unlock_reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "contest_id",
+    "category_id",
+    "participant_id",
+    "judge_id"
+  ]
+}

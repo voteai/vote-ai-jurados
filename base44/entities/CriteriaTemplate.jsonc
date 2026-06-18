@@ -1,0 +1,25 @@
+{
+  "name": "CriteriaTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do template"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do template"
+    },
+    "criteria": {
+      "type": "string",
+      "description": "JSON serializado com array de crit\u00e9rios"
+    },
+    "created_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "criteria"
+  ]
+}

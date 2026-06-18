@@ -1,0 +1,28 @@
+{
+  "name": "JudgeAssignment",
+  "type": "object",
+  "properties": {
+    "contest_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "judge_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "contest_id",
+    "category_id",
+    "judge_id"
+  ]
+}

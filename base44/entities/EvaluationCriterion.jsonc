@@ -1,0 +1,71 @@
+{
+  "name": "EvaluationCriterion",
+  "type": "object",
+  "properties": {
+    "contest_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Peso em % (0-100)"
+    },
+    "control_type": {
+      "type": "string",
+      "enum": [
+        "numeric_bar",
+        "thermometer",
+        "speedometer",
+        "ruler"
+      ],
+      "default": "numeric_bar"
+    },
+    "min_value": {
+      "type": "number",
+      "default": 0
+    },
+    "max_value": {
+      "type": "number",
+      "default": 10
+    },
+    "allow_decimal": {
+      "type": "boolean",
+      "default": true
+    },
+    "allow_comment": {
+      "type": "boolean",
+      "default": true
+    },
+    "labels": {
+      "type": "string",
+      "description": "R\u00f3tulos personalizados separados por v\u00edrgula"
+    },
+    "display_order": {
+      "type": "number",
+      "default": 0
+    },
+    "required": {
+      "type": "boolean",
+      "default": true
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "contest_id",
+    "category_id",
+    "name",
+    "weight",
+    "control_type"
+  ]
+}

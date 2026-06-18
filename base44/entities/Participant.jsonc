@@ -1,0 +1,52 @@
+{
+  "name": "Participant",
+  "type": "object",
+  "properties": {
+    "contest_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "support_file_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "registered",
+        "approved",
+        "evaluating",
+        "disqualified",
+        "classified"
+      ],
+      "default": "registered"
+    },
+    "internal_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "contest_id",
+    "category_id",
+    "name"
+  ]
+}

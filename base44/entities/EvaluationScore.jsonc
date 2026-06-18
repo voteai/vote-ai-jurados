@@ -1,0 +1,34 @@
+{
+  "name": "EvaluationScore",
+  "type": "object",
+  "properties": {
+    "evaluation_id": {
+      "type": "string"
+    },
+    "criterion_id": {
+      "type": "string"
+    },
+    "criterion_name": {
+      "type": "string"
+    },
+    "raw_value": {
+      "type": "number"
+    },
+    "normalized_value": {
+      "type": "number",
+      "description": "Valor normalizado 0-100"
+    },
+    "weighted_score": {
+      "type": "number",
+      "description": "Valor normalizado x peso"
+    },
+    "comment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "evaluation_id",
+    "criterion_id",
+    "normalized_value"
+  ]
+}

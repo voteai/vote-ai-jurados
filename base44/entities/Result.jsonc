@@ -1,0 +1,56 @@
+{
+  "name": "Result",
+  "type": "object",
+  "properties": {
+    "contest_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "participant_id": {
+      "type": "string"
+    },
+    "participant_name": {
+      "type": "string"
+    },
+    "category_name": {
+      "type": "string"
+    },
+    "final_score": {
+      "type": "number"
+    },
+    "judge_score": {
+      "type": "number"
+    },
+    "public_score": {
+      "type": "number"
+    },
+    "rank_position": {
+      "type": "number"
+    },
+    "total_judges": {
+      "type": "number"
+    },
+    "total_public_votes": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "partial",
+        "final",
+        "published"
+      ],
+      "default": "partial"
+    },
+    "published_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "contest_id",
+    "category_id",
+    "participant_id"
+  ]
+}

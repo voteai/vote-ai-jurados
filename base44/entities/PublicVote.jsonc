@@ -1,0 +1,49 @@
+{
+  "name": "PublicVote",
+  "type": "object",
+  "properties": {
+    "contest_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "participant_id": {
+      "type": "string"
+    },
+    "participant_name": {
+      "type": "string"
+    },
+    "voter_fingerprint": {
+      "type": "string",
+      "description": "Hash an\u00f4nimo para evitar voto duplicado (IP + user_agent)"
+    },
+    "voter_user_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio logado, se dispon\u00edvel"
+    },
+    "final_score": {
+      "type": "number"
+    },
+    "scores_json": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "canceled"
+      ],
+      "default": "submitted"
+    },
+    "submitted_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "contest_id",
+    "category_id",
+    "participant_id",
+    "voter_fingerprint"
+  ]
+}

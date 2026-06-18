@@ -1,0 +1,122 @@
+{
+  "name": "Contest",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do concurso"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do concurso"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de fim"
+    },
+    "location": {
+      "type": "string",
+      "description": "Local do evento"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "evaluating",
+        "closed",
+        "published"
+      ],
+      "default": "draft",
+      "description": "Status do concurso"
+    },
+    "allow_public_vote": {
+      "type": "boolean",
+      "default": false,
+      "description": "Permite vota\u00e7\u00e3o popular"
+    },
+    "public_vote_weight": {
+      "type": "number",
+      "default": 0,
+      "description": "Peso da vota\u00e7\u00e3o popular em %"
+    },
+    "rules": {
+      "type": "string",
+      "description": "Regras gerais do concurso"
+    },
+    "organizer_id": {
+      "type": "string",
+      "description": "ID do organizador"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "ID do dono administrativo do concurso"
+    },
+    "organizer_email": {
+      "type": "string",
+      "description": "E-mail do organizador"
+    },
+    "organizer_name": {
+      "type": "string",
+      "description": "Nome do organizador"
+    },
+    "participant_add_by_link": {
+      "type": "boolean",
+      "default": true
+    },
+    "participant_add_by_email": {
+      "type": "boolean",
+      "default": true
+    },
+    "participant_add_manual": {
+      "type": "boolean",
+      "default": true
+    },
+    "participant_name_field": {
+      "type": "string",
+      "default": "artist_name"
+    },
+    "judge_add_by_link": {
+      "type": "boolean",
+      "default": true
+    },
+    "judge_add_by_qrcode": {
+      "type": "boolean",
+      "default": true
+    },
+    "default_voting_control": {
+      "type": "string",
+      "default": "ruler"
+    },
+    "show_partial_ranking": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mostrar ranking parcial para jurados"
+    },
+    "result_published": {
+      "type": "boolean",
+      "default": false,
+      "description": "Resultado publicado"
+    },
+    "show_individual_scores": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mostrar notas individuais"
+    },
+    "show_comments": {
+      "type": "boolean",
+      "default": true,
+      "description": "Mostrar coment\u00e1rios"
+    }
+  },
+  "required": [
+    "name",
+    "status"
+  ]
+}
