@@ -34,6 +34,7 @@ export default function EvaluationPage({ linkMode = false }) {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("eval_dark_mode") === "true");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [justSubmittedParticipantId, setJustSubmittedParticipantId] = useState(null);
+  const [confirmedParticipantIds, setConfirmedParticipantIds] = useState(() => new Set());
 
   const dk = darkMode;
   const backTarget = linkMode ? "/" : "/judge";
@@ -68,6 +69,10 @@ export default function EvaluationPage({ linkMode = false }) {
     ? evaluations.find((evaluation) => evaluation.participant_id === currentParticipant.id)
     : null;
   const currentEvaluationSubmitted = currentEvaluation?.status === "submitted";
+  const currentCategory = categories.find((category) => category.id === selectedCategory);
+  const currentParticipantConfirmed = !!currentParticipant && (
+    currentEvaluationSubmitted || confirmedParticipantIds.has(currentParticipant.id)
+  );
 
   useEffect(() => {
     loadCurrentEvaluation();
@@ -209,6 +214,10 @@ export default function EvaluationPage({ linkMode = false }) {
 
   const handleSave = async (submit = false) => {
     if (!currentParticipant || !judge?.id || accessError) return;
+    if (!currentParticipantConfirmed) {
+      toast.error("Confirme o participante antes de avaliar.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -387,13 +396,18 @@ export default function EvaluationPage({ linkMode = false }) {
                 <CardTitle className="flex items-center justify-between gap-3 text-lg">
                   <span className="flex items-center gap-3 min-w-0">
                     {currentParticipant.photo_url ? (
-                      <img src={currentParticipant.photo_url} alt={currentParticipant.name} className="h-12 w-12 rounded-full border border-border object-cover" />
+                      <img src={currentParticipant.photo_url} alt={currentParticipant.name} className="h-16 w-16 rounded-full border border-border object-cover" />
                     ) : (
-                      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
-                        <User className="w-5 h-5" />
+                      <span className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
+                        <User className="w-7 h-7" />
                       </span>
                     )}
-                    <span className="truncate">{currentParticipant.name}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate">{currentParticipant.name}</span>
+                      {currentCategory?.name && (
+                        <span className={`block text-sm font-normal ${dk ? "text-gray-400" : "text-gray-500"}`}>{currentCategory.name}</span>
+                      )}
+                    </span>
                   </span>
                   <span className="flex-shrink-0">
                     {getEvalStatus(currentParticipant.id) === "submitted" && <Badge className="bg-green-600 text-white">Enviado</Badge>}
@@ -411,6 +425,30 @@ export default function EvaluationPage({ linkMode = false }) {
               )}
             </Card>
 
+            {!currentEvaluationSubmitted && (
+              <div className={`mb-4 rounded-xl border p-4 ${currentParticipantConfirmed ? dk ? "border-green-500/30 bg-green-500/10" : "border-green-200 bg-green-50" : dk ? "border-amber-500/30 bg-amber-500/10" : "border-amber-200 bg-amber-50"}`}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className={`text-sm font-semibold ${currentParticipantConfirmed ? dk ? "text-green-200" : "text-green-800" : dk ? "text-amber-200" : "text-amber-800"}`}>
+                      {currentParticipantConfirmed ? "Participante confirmado" : "Confirme o participante antes de votar"}
+                    </p>
+                    <p className={`text-sm ${dk ? "text-gray-300" : "text-gray-600"}`}>
+                      Verifique foto, nome{currentParticipant.code ? ` e codigo ${currentParticipant.code}` : ""} para evitar voto no candidato errado.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    className={currentParticipantConfirmed ? "gap-2 bg-green-600 text-white hover:bg-green-700" : "gap-2 bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:from-cyan-600 hover:to-violet-700"}
+                    onClick={() => setConfirmedParticipantIds((prev) => new Set(prev).add(currentParticipant.id))}
+                    disabled={currentParticipantConfirmed}
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    {currentParticipantConfirmed ? "Confirmado" : "Confirmar participante"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4 mb-4">
               {currentCriteria.map((criterion) => (
                 <Card key={criterion.id} className={dk ? "bg-gray-900 border-gray-700 text-gray-100" : ""}>
@@ -426,7 +464,7 @@ export default function EvaluationPage({ linkMode = false }) {
                       criterion={criterion}
                       value={scores[criterion.id] ?? criterion.min_value}
                       onChange={(value) => setScores((prev) => ({ ...prev, [criterion.id]: value }))}
-                      disabled={!isEvalEditable(currentParticipant.id)}
+                      disabled={!isEvalEditable(currentParticipant.id) || !currentParticipantConfirmed}
                     />
                   </CardContent>
                 </Card>
@@ -438,7 +476,7 @@ export default function EvaluationPage({ linkMode = false }) {
                 <Label className="mb-2 block">Comentario Geral</Label>
                 <Textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={3}
                   placeholder="Observacoes sobre este participante..."
-                  disabled={!isEvalEditable(currentParticipant.id)} />
+                  disabled={!isEvalEditable(currentParticipant.id) || !currentParticipantConfirmed} />
               </CardContent>
             </Card>
 
@@ -485,11 +523,11 @@ export default function EvaluationPage({ linkMode = false }) {
                   </div>
                 )}
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}
+                  <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || !currentParticipantConfirmed}
                     className={`flex-1 gap-2 h-12 text-base ${dk ? "border-gray-600 text-gray-200 hover:bg-gray-800" : ""}`}>
                     <Save className="w-5 h-5" /> Rascunho
                   </Button>
-                  <Button onClick={() => setConfirmOpen(true)} disabled={saving}
+                  <Button onClick={() => setConfirmOpen(true)} disabled={saving || !currentParticipantConfirmed}
                     className="flex-1 gap-2 h-12 text-base bg-green-600 hover:bg-green-700">
                     <CheckCircle className="w-5 h-5" /> Enviar
                   </Button>
