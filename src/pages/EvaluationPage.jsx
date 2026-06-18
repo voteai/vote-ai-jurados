@@ -14,7 +14,7 @@ import { normalizeScore as normalizeFn, calcLiveScore } from "@/utils/scoring";
 import confetti from "canvas-confetti";
 import { logAudit } from "@/lib/audit-log";
 
-export default function EvaluationPage() {
+export default function EvaluationPage({ linkMode = false }) {
   const { contestId, judgeId } = useParams();
   const navigate = useNavigate();
   const [contest, setContest] = useState(null);
@@ -36,13 +36,14 @@ export default function EvaluationPage() {
   const [justSubmittedParticipantId, setJustSubmittedParticipantId] = useState(null);
 
   const dk = darkMode;
+  const backTarget = linkMode ? "/" : "/judge";
 
   const toggleDark = () => setDarkMode((prev) => {
     localStorage.setItem("eval_dark_mode", String(!prev));
     return !prev;
   });
 
-  useEffect(() => { loadData(); }, [contestId, judgeId]);
+  useEffect(() => { loadData(); }, [contestId, judgeId, linkMode]);
 
   const filteredParticipants = useMemo(() => {
     if (!selectedCategory) return [];
@@ -77,7 +78,6 @@ export default function EvaluationPage() {
     setAccessError("");
 
     try {
-      const user = await base44.auth.me();
       const [contestRes, judgeRes] = await Promise.all([
         base44.entities.Contest.filter({ id: contestId }),
         base44.entities.Judge.filter({ id: judgeId }),
@@ -85,20 +85,46 @@ export default function EvaluationPage() {
 
       const foundContest = contestRes[0] || null;
       const foundJudge = judgeRes[0] || null;
-      const userEmail = String(user?.email || "").trim().toLowerCase();
-      const judgeEmail = String(foundJudge?.email || "").trim().toLowerCase();
 
       setContest(foundContest);
 
-      if (!foundJudge || !userEmail || judgeEmail !== userEmail) {
+      if (!foundContest) {
         setJudge(null);
         setParticipants([]);
         setCriteria([]);
         setCategories([]);
         setAssignments([]);
         setEvaluations([]);
-        setAccessError("Voce nao tem permissao para acessar estas avaliacoes.");
+        setAccessError("Concurso nao encontrado.");
         return;
+      }
+
+      if (!foundJudge) {
+        setJudge(null);
+        setParticipants([]);
+        setCriteria([]);
+        setCategories([]);
+        setAssignments([]);
+        setEvaluations([]);
+        setAccessError("Link individual de jurado invalido.");
+        return;
+      }
+
+      if (!linkMode) {
+        const user = await base44.auth.me();
+        const userEmail = String(user?.email || "").trim().toLowerCase();
+        const judgeEmail = String(foundJudge?.email || "").trim().toLowerCase();
+
+        if (!userEmail || judgeEmail !== userEmail) {
+          setJudge(null);
+          setParticipants([]);
+          setCriteria([]);
+          setCategories([]);
+          setAssignments([]);
+          setEvaluations([]);
+          setAccessError("Voce nao tem permissao para acessar estas avaliacoes.");
+          return;
+        }
       }
 
       if (foundJudge.contest_id && foundJudge.contest_id !== contestId) {
@@ -110,6 +136,12 @@ export default function EvaluationPage() {
       if (foundJudge.invitation_status === "declined" || foundJudge.active === false) {
         setJudge(null);
         setAccessError("Seu cadastro de jurado nao esta ativo para este concurso.");
+        return;
+      }
+
+      if (!["active", "evaluating"].includes(foundContest.status)) {
+        setJudge(null);
+        setAccessError("A votacao ainda nao foi liberada pelo organizador.");
         return;
       }
 
@@ -279,8 +311,8 @@ export default function EvaluationPage() {
           <h2 className="text-xl font-bold mb-2">Acesso bloqueado</h2>
           <p className="text-sm text-gray-500 mb-4">{accessError}</p>
           <div className="flex justify-center gap-2">
-            <Link to="/judge"><Button variant="outline">Voltar ao painel</Button></Link>
-            <Button onClick={() => navigate("/judge")} className="bg-blue-600 hover:bg-blue-700">Meus concursos</Button>
+            <Link to={backTarget}><Button variant="outline">Voltar</Button></Link>
+            {!linkMode && <Button onClick={() => navigate("/judge")} className="bg-blue-600 hover:bg-blue-700">Meus concursos</Button>}
           </div>
         </div>
       </div>
@@ -294,7 +326,7 @@ export default function EvaluationPage() {
           <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-amber-400" />
           <h2 className="text-xl font-bold mb-2">Sem atribuicoes ativas</h2>
           <p className="text-sm text-gray-500 mb-4">Voce ainda nao foi atribuido a nenhuma categoria neste concurso. Entre em contato com o organizador.</p>
-          <Link to="/judge"><Button variant="outline">Voltar ao painel</Button></Link>
+          <Link to={backTarget}><Button variant="outline">Voltar</Button></Link>
         </div>
       </div>
     );
@@ -304,7 +336,7 @@ export default function EvaluationPage() {
     <div className={`min-h-screen ${dk ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900"}`}>
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
-          <Link to="/judge"><Button variant="ghost" size="icon" className={dk ? "text-gray-300 hover:bg-gray-800" : ""}><ArrowLeft className="w-4 h-4" /></Button></Link>
+          <Link to={backTarget}><Button variant="ghost" size="icon" className={dk ? "text-gray-300 hover:bg-gray-800" : ""}><ArrowLeft className="w-4 h-4" /></Button></Link>
           <div className="flex-1">
             <h1 className="text-xl font-bold">{contest?.name}</h1>
             <p className={`text-sm ${dk ? "text-gray-400" : "text-gray-500"}`}>Jurado: {judge?.name}</p>

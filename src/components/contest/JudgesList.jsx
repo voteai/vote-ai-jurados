@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CheckCircle2, Plus, Trash2, Mail, UserPlus, User, XCircle } from "lucide-react";
+import { CheckCircle2, Plus, Trash2, Mail, UserPlus, User, XCircle, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { asArray, byDisplayOrder, hasValidId, idValue, safeText } from "@/lib/safe-data";
 import EmptyStateActionable from "@/components/contest/EmptyStateActionable";
@@ -222,6 +222,18 @@ export default function JudgesList({ contest, isAdmin, onChanged }) {
   const statusColor = { pending: "secondary", accepted: "default", declined: "destructive" };
   const statusLabel = { pending: "Pendente", accepted: "Aceito", declined: "Recusado" };
 
+  const getJudgeVoteUrl = (judgeId) => `${window.location.origin}/judge-vote/${contest.id}/${judgeId}`;
+
+  const copyJudgeVoteLink = async (judge) => {
+    try {
+      await navigator.clipboard.writeText(getJudgeVoteUrl(judge.id));
+      toast.success("Link individual do jurado copiado.");
+    } catch (error) {
+      console.error("Erro ao copiar link do jurado:", error);
+      toast.error("Nao foi possivel copiar o link.");
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>;
   }
@@ -333,6 +345,25 @@ export default function JudgesList({ contest, isAdmin, onChanged }) {
                           <XCircle className="w-4 h-4" /> Recusar
                         </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 border-cyan-500/30 text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300"
+                        onClick={() => copyJudgeVoteLink(judge)}
+                        title="Copiar link individual de votacao"
+                      >
+                        <Copy className="w-4 h-4" /> Copiar link
+                      </Button>
+                      <a href={getJudgeVoteUrl(judge.id)} target="_blank" rel="noopener noreferrer">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 border-violet-500/30 text-violet-600 hover:bg-violet-500/10 dark:text-violet-300"
+                          title="Abrir votacao individual do jurado"
+                        >
+                          <ExternalLink className="w-4 h-4" /> Abrir
+                        </Button>
+                      </a>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(judge.id)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
                     </>
                   )}

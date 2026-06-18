@@ -188,8 +188,8 @@ export default function ContestDetail() {
               </Button>
             </a>
             {isAdmin && (
-              <Button variant="outline" size="sm" className="gap-2 text-pink-600 border-pink-300 hover:bg-pink-50 dark:hover:bg-pink-500/10" onClick={() => setPublicVoteDialogOpen(true)}>
-                <QrCode className="w-4 h-4" /> Votacao Jurados
+              <Button variant="outline" size="sm" className="gap-2 text-pink-600 border-pink-300 hover:bg-pink-50 dark:hover:bg-pink-500/10" onClick={() => setActiveTab("judges")}>
+                <QrCode className="w-4 h-4" /> Links dos Jurados
               </Button>
             )}
             {isAdmin && (

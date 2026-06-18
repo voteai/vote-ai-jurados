@@ -64,6 +64,7 @@ const AuthenticatedApp = () => {
         <Route path="/judge" element={<JudgePanel />} />
         <Route path="/judge/:contestId/:judgeId" element={<EvaluationPage />} />
       </Route>
+      <Route path="/judge-vote/:contestId/:judgeId" element={<EvaluationPage linkMode />} />
       <Route path="/judge-vote/:contestId" element={<PublicVoting jurorOnly />} />
       <Route path="/vote/:contestId" element={<PublicVoting />} />
       <Route path="/ranking/:contestId" element={<LiveRanking />} />
