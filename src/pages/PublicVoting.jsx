@@ -49,28 +49,8 @@ export default function PublicVoting({ jurorOnly = false }) {
       let currentVoterKey = getFingerprint();
 
       if (jurorOnly) {
-        const authUser = await base44.auth.me();
-        const email = String(authUser?.email || "").trim().toLowerCase();
-        if (!email) {
-          setAccessError("Entre com a conta cadastrada pelo organizador para acessar esta votacao.");
-          return;
-        }
-
-        const judgeRecords = await base44.entities.Judge.filter({ email });
-        const allowedJudge = (judgeRecords || []).find((judge) =>
-          String(judge.email || "").trim().toLowerCase() === email &&
-          String(judge.contest_id || "") === String(contestId) &&
-          judge.invitation_status !== "declined" &&
-          judge.active !== false
-        );
-
-        if (!allowedJudge) {
-          setAccessError("Este link e restrito aos jurados cadastrados pelo organizador.");
-          return;
-        }
-
-        currentVoterKey = `juror_vote:${allowedJudge.id}`;
-        setJurorName(allowedJudge.name || authUser.full_name || authUser.email);
+        currentVoterKey = `juror_link:${contestId}:${getFingerprint()}`;
+        setJurorName("Jurado convidado");
       }
 
       setVoterKey(currentVoterKey);
@@ -223,7 +203,7 @@ export default function PublicVoting({ jurorOnly = false }) {
   if (accessError) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-gray-500 px-4 text-center">
       <AlertCircle className="w-10 h-10 text-red-400" />
-      <p className="text-lg font-medium">Acesso restrito</p>
+      <p className="text-lg font-medium">Nao foi possivel abrir a votacao</p>
       <p className="text-sm">{accessError}</p>
     </div>
   );
