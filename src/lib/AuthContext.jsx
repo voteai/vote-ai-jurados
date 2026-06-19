@@ -5,6 +5,15 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
 const getBase44ApiUrl = () => `${(appParams.appBaseUrl || 'https://base44.app').replace(/\/$/, '')}/api`;
+const AUTH_TIMEOUT_MS = 9000;
+
+const withTimeout = (promise, message) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), AUTH_TIMEOUT_MS);
+    }),
+  ]);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -36,7 +45,10 @@ export const AuthProvider = ({ children }) => {
       });
       
       try {
-        const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
+        const publicSettings = await withTimeout(
+          appClient.get(`/prod/public-settings/by-id/${appParams.appId}`),
+          'Tempo esgotado ao carregar configuracoes publicas.'
+        );
         setAppPublicSettings(publicSettings);
         
         // If we got the app public settings successfully, check if user is authenticated
@@ -94,7 +106,10 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      const currentUser = await withTimeout(
+        base44.auth.me(),
+        'Tempo esgotado ao validar sessao.'
+      );
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);

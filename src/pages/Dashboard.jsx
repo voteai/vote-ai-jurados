@@ -16,12 +16,22 @@ import { logAudit } from "@/lib/audit-log";
 
 const statusLabel = { draft: "Rascunho", active: "Ativo", evaluating: "Avaliando", closed: "Encerrado", published: "Publicado" };
 const statusColor = { draft: "secondary", active: "default", evaluating: "default", closed: "secondary", published: "default" };
+const DASHBOARD_TIMEOUT_MS = 9000;
+
+const withTimeout = (promise, message) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), DASHBOARD_TIMEOUT_MS);
+    }),
+  ]);
 
 export default function Dashboard() {
   const [contests, setContests] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, evaluating: 0, closed: 0 });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [dark, setDark] = useDarkMode();
   const [statusDialog, setStatusDialog] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("draft");
@@ -32,20 +42,35 @@ export default function Dashboard() {
   }, []);
 
   const loadData = async () => {
-    const [u, c] = await Promise.all([
-      base44.auth.me(),
-      base44.entities.Contest.list("-created_date", 10),
-    ]);
-    const contestsList = Array.isArray(c) ? c : [];
-    setUser(u);
-    setContests(contestsList);
-    setStats({
-      total: contestsList.length,
-      active: contestsList.filter((x) => x.status === "active").length,
-      evaluating: contestsList.filter((x) => x.status === "evaluating").length,
-      closed: contestsList.filter((x) => x.status === "closed").length,
-    });
-    setLoading(false);
+    setLoading(true);
+    setLoadError("");
+
+    try {
+      const [u, c] = await withTimeout(
+        Promise.all([
+          base44.auth.me(),
+          base44.entities.Contest.list("-created_date", 50),
+        ]),
+        "Tempo esgotado ao carregar o painel. Atualize a pagina ou entre novamente."
+      );
+      const contestsList = Array.isArray(c) ? c : [];
+      setUser(u);
+      setContests(contestsList);
+      setStats({
+        total: contestsList.length,
+        active: contestsList.filter((x) => x.status === "active").length,
+        evaluating: contestsList.filter((x) => x.status === "evaluating").length,
+        closed: contestsList.filter((x) => x.status === "closed").length,
+      });
+    } catch (error) {
+      console.error("Erro ao carregar dashboard:", error);
+      setUser(null);
+      setContests([]);
+      setStats({ total: 0, active: 0, evaluating: 0, closed: 0 });
+      setLoadError(error?.message || "Nao foi possivel carregar o painel.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openStatusDialog = (contest) => {
@@ -78,6 +103,26 @@ export default function Dashboard() {
   };
 
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>;
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-10 text-foreground">
+        <div className="mx-auto max-w-md rounded-lg border bg-card p-6 text-center shadow-sm">
+          <AppLogo size="md" />
+          <h1 className="mt-6 text-xl font-bold">Nao foi possivel carregar o painel</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{loadError}</p>
+          <div className="mt-6 grid gap-2 sm:grid-cols-2">
+            <Button variant="outline" onClick={loadData}>Tentar novamente</Button>
+            <Link to="/login">
+              <Button className="w-full bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:from-cyan-600 hover:to-violet-700">
+                Entrar novamente
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const manageableContests = contests.filter((contest) => canManageContest(user, contest));
   const primaryContest = manageableContests[0] || contests[0];
