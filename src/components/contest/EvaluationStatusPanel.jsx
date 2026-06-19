@@ -19,6 +19,7 @@ export default function EvaluationStatusPanel({ contest, isAdmin }) {
   const [evalScores, setEvalScores] = useState([]); // all EvaluationScore for this category
   const [criteria, setCriteria] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [unlockTarget, setUnlockTarget] = useState(null); // { evaluation, participantName, judgeName }
@@ -41,35 +42,86 @@ export default function EvaluationStatusPanel({ contest, isAdmin }) {
   }, [contest?.id]);
 
   const loadBase = async () => {
-    const cats = await base44.entities.Category.filter({ contest_id: contest.id });
-    const validCats = asArray(cats).filter(hasValidId).sort(byDisplayOrder);
-    setCategories(validCats);
-    if (validCats.length > 0) setSelectedCat(idValue(validCats[0].id));
-    else setLoading(false);
+    setLoading(true);
+    setLoadError("");
+
+    try {
+      const cats = await base44.entities.Category.filter({ contest_id: contest.id });
+      const validCats = asArray(cats).filter(hasValidId).sort(byDisplayOrder);
+      setCategories(validCats);
+      setParticipants([]);
+      setJudges([]);
+      setAssignments([]);
+      setEvaluations([]);
+      setEvalScores([]);
+      setCriteria([]);
+
+      if (validCats.length > 0) setSelectedCat(idValue(validCats[0].id));
+      else {
+        setSelectedCat("");
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar categorias do acompanhamento:", error);
+      setCategories([]);
+      setSelectedCat("");
+      setParticipants([]);
+      setJudges([]);
+      setAssignments([]);
+      setEvaluations([]);
+      setEvalScores([]);
+      setCriteria([]);
+      setLoadError("Nao foi possivel carregar o acompanhamento deste concurso.");
+      setLoading(false);
+    }
   };
 
   const loadDetails = async () => {
-    setLoading(true);
-    const [p, j, a, e, cr] = await Promise.all([
-      base44.entities.Participant.filter({ contest_id: contest.id, category_id: selectedCat }),
-      base44.entities.Judge.filter({ contest_id: contest.id }),
-      base44.entities.JudgeAssignment.filter({ contest_id: contest.id, category_id: selectedCat, status: "active" }),
-      base44.entities.Evaluation.filter({ contest_id: contest.id, category_id: selectedCat }),
-      base44.entities.EvaluationCriterion.filter({ contest_id: contest.id, category_id: selectedCat }),
-    ]);
-    setParticipants(asArray(p).filter(hasValidId).filter(x => x.status !== "disqualified"));
-    setJudges(asArray(j).filter(hasValidId));
-    setAssignments(asArray(a).filter(hasValidId));
-    setEvaluations(asArray(e).filter(hasValidId));
-    setCriteria(asArray(cr).filter(hasValidId).filter(c => c.active));
+    if (!selectedCat) {
+      setParticipants([]);
+      setJudges([]);
+      setAssignments([]);
+      setEvaluations([]);
+      setEvalScores([]);
+      setCriteria([]);
+      setLoading(false);
+      return;
+    }
 
-    // Load all EvaluationScore for submitted evaluations in this category
-    const submittedEvals = asArray(e).filter(ev => ev.status === "submitted" || ev.status === "unlocked");
-    const scoreArrays = await Promise.all(
-      submittedEvals.map(ev => base44.entities.EvaluationScore.filter({ evaluation_id: ev.id }))
-    );
-    setEvalScores(scoreArrays.flat());
-    setLoading(false);
+    setLoading(true);
+    setLoadError("");
+
+    try {
+      const [p, j, a, e, cr] = await Promise.all([
+        base44.entities.Participant.filter({ contest_id: contest.id, category_id: selectedCat }),
+        base44.entities.Judge.filter({ contest_id: contest.id }),
+        base44.entities.JudgeAssignment.filter({ contest_id: contest.id, category_id: selectedCat, status: "active" }),
+        base44.entities.Evaluation.filter({ contest_id: contest.id, category_id: selectedCat }),
+        base44.entities.EvaluationCriterion.filter({ contest_id: contest.id, category_id: selectedCat }),
+      ]);
+      setParticipants(asArray(p).filter(hasValidId).filter(x => x.status !== "disqualified"));
+      setJudges(asArray(j).filter(hasValidId));
+      setAssignments(asArray(a).filter(hasValidId));
+      setEvaluations(asArray(e).filter(hasValidId));
+      setCriteria(asArray(cr).filter(hasValidId).filter(c => c.active));
+
+      const submittedEvals = asArray(e).filter(ev => ev.status === "submitted" || ev.status === "unlocked");
+      const scoreArrays = await Promise.all(
+        submittedEvals.map(ev => base44.entities.EvaluationScore.filter({ evaluation_id: ev.id }))
+      );
+      setEvalScores(scoreArrays.flat());
+    } catch (error) {
+      console.error("Erro ao carregar detalhes do acompanhamento:", error);
+      setParticipants([]);
+      setJudges([]);
+      setAssignments([]);
+      setEvaluations([]);
+      setEvalScores([]);
+      setCriteria([]);
+      setLoadError("Nao foi possivel carregar os dados desta categoria.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getEval = (participantId, judgeId) =>
@@ -127,7 +179,7 @@ export default function EvaluationStatusPanel({ contest, isAdmin }) {
             {categories.map(c => <SelectItem key={idValue(c.id)} value={idValue(c.id)}>{safeText(c.name, "Sem nome")}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={loadDetails} className="gap-2">
+        <Button variant="outline" size="sm" onClick={selectedCat ? loadDetails : loadBase} className="gap-2">
           <RefreshCw className="w-4 h-4" /> Atualizar
         </Button>
         <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
@@ -186,10 +238,19 @@ export default function EvaluationStatusPanel({ contest, isAdmin }) {
         </CardContent>
       </Card>
 
-      {loading ? (
+      {loadError ? (
+        <Card><CardContent className="py-10 text-center text-red-500">{loadError}</CardContent></Card>
+      ) : loading ? (
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
         </div>
+      ) : categories.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="font-semibold text-foreground">Nenhuma categoria cadastrada.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Cadastre as categorias da final antes de acompanhar as avaliacoes.</p>
+          </CardContent>
+        </Card>
       ) : participants.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">Nenhum participante nesta categoria.</CardContent></Card>
       ) : filteredParticipants.length === 0 ? (

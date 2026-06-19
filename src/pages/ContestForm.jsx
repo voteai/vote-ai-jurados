@@ -53,6 +53,7 @@ export default function ContestForm() {
     event.preventDefault();
     setSaving(true);
     try {
+      let nextPath = isEdit ? `/contests/${id}` : "/dashboard";
       if (isEdit) {
         await base44.entities.Contest.update(id, form);
         await logAudit({ action: "contest.update", entityType: "Contest", entityId: id, contestId: id, newValue: form });
@@ -66,8 +67,9 @@ export default function ContestForm() {
           organizer_name: user.full_name,
         });
         await logAudit({ action: "contest.create", entityType: "Contest", entityId: created?.id, contestId: created?.id, newValue: created || form });
+        if (created?.id) nextPath = `/contests/${created.id}`;
       }
-      navigate(isEdit ? `/contests/${id}` : "/dashboard");
+      navigate(nextPath);
     } finally {
       setSaving(false);
     }
